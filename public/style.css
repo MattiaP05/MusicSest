@@ -1,0 +1,132 @@
+:root {
+  --bg: #0e0f13;
+  --card: #171923;
+  --card-2: #1e2130;
+  --text: #e9ecf3;
+  --muted: #8a90a6;
+  --accent: #1db954;
+  --accent-2: #3b82f6;
+  --danger: #ef4444;
+  --border: #262a3a;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: radial-gradient(circle at 20% 0%, #1a1f33 0%, var(--bg) 55%);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+#app {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}
+
+h1 { font-size: 28px; margin: 0 0 4px; }
+h2 { font-size: 16px; margin: 0 0 12px; letter-spacing: .02em; text-transform: uppercase; color: var(--muted); }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  margin-bottom: 16px;
+}
+
+.sub { color: var(--muted); margin: 0 0 20px; font-size: 14px; }
+.beta { font-size: 11px; background: var(--accent-2); padding: 2px 8px; border-radius: 999px; vertical-align: middle; }
+
+label { display: block; font-size: 12px; color: var(--muted); margin: 12px 0 6px; text-transform: uppercase; letter-spacing: .05em; }
+
+input, textarea, select {
+  width: 100%;
+  background: var(--card-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-family: inherit;
+  outline: none;
+}
+input:focus, textarea:focus { border-color: var(--accent-2); }
+textarea { min-height: 160px; resize: vertical; font-family: ui-monospace, monospace; font-size: 13px; }
+
+button {
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--card-2);
+  color: var(--text);
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: .15s;
+}
+button:hover { filter: brightness(1.15); }
+button:disabled { opacity: .4; cursor: not-allowed; }
+
+button.primary { background: var(--accent); border-color: var(--accent); color: #06170a; width: 100%; margin-top: 16px; }
+button.blue { background: var(--accent-2); border-color: var(--accent-2); color: #041024; width: 100%; margin-top: 16px; }
+button.ghost { background: transparent; }
+button.danger { border-color: var(--danger); color: #ffb4b4; }
+
+hr { border: none; border-top: 1px solid var(--border); margin: 22px 0; }
+
+.topbar {
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 14px; padding: 14px 18px; margin-bottom: 16px; gap: 12px; flex-wrap: wrap;
+}
+.topbar .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+.topbar .code { font-size: 26px; font-weight: 800; letter-spacing: .18em; }
+.topbar-actions { display: flex; gap: 8px; }
+
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+
+.track-title { font-weight: 700; font-size: 16px; }
+.track-artist { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.muted { color: var(--muted); font-size: 14px; }
+.small { font-size: 12px; }
+
+.progress { height: 8px; background: var(--card-2); border-radius: 999px; overflow: hidden; margin: 14px 0 8px; }
+.progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), #7ef2a4); transition: width .25s linear; }
+
+.candidate {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--card-2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 12px 14px; margin-bottom: 8px;
+}
+.candidate.voted { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.candidate-info { flex: 1; min-width: 0; }
+.candidate-info .track-title { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.votes { font-size: 12px; color: var(--muted); background: var(--card); padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+
+.controls { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+.controls button { flex: 1; min-width: 120px; }
+
+.playlist-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.playlist-item:last-child { border-bottom: none; }
+.playlist-item .track-artist { margin: 0; }
+
+.error { color: #ffb4b4; font-size: 14px; margin-top: 12px; }
+.badge { font-size: 11px; background: var(--accent); color: #06170a; padding: 2px 8px; border-radius: 999px; font-weight: 700; }
+
+.users { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.user { font-size: 12px; background: var(--card-2); border: 1px solid var(--border); padding: 4px 10px; border-radius: 999px; }
+.user.master { border-color: var(--accent); color: var(--accent); }
+
+/* input di ricerca playlist */
+#playlistSearch {
+  font-size: 14px;
+}
+
+/* pulsante Riprendi dentro la riga di controlli: eredita flex:1 dagli altri */
+.controls button.primary {
+  width: auto;
+}
