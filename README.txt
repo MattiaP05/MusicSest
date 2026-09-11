@@ -11,13 +11,13 @@ Il pubblico vota la prossima canzone.
 
 ## 📖 Indice
 
-- [Cos'è MusicSest](#-cosè-musicsest)
+- [Cos'è MusicSest](#cosè-musicsest)
 
 ---
 
-## 🎯 Cos'è MusicSest
+## Cos'è MusicSest
 
-**MusicSest** è una web app pensata per feste, serate fra amici, aule o qualsiasi contesto in si vuole condividere delle musica.
+**MusicSest** è una web app pensata per feste, serate fra amici, aule o qualsiasi contesto in cui si vuole condividere della musica.
 
 Un utente (**master**) crea una sessione e carica una playlist. Gli altri utenti (**listener**) si uniscono alla sessione con un codice a 5 caratteri e votano la prossima canzone da riprodurre.
 
@@ -42,5 +42,3 @@ Quando il brano corrente finisce, **la canzone più votata parte da sola**. Il m
 - 🧑‍🤝‍🧑 **Lista partecipanti in tempo reale** — chi è nella stanza, chi è il master.
 - 🔗 **Deep link** — `/?join=ABCDE` precompila il codice per l'ospite.
 - 📱 **Responsive** — layout a due colonne che collassa su mobile.
-
-</div>
