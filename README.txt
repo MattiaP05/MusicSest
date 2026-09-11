@@ -1,9 +1,9 @@
 <div align="center">
 
-# 🎧 MusicSest
+<h1>🎧 MusicSest</h1>
 
-**Voto collaborativo in tempo reale su playlist musicali.**
-Il pubblico vota la prossima canzone.
+<p><strong>Voto collaborativo in tempo reale su playlist musicali.</strong><br>
+Il pubblico vota la prossima canzone.</p>
 
 </div>
 
@@ -12,6 +12,7 @@ Il pubblico vota la prossima canzone.
 ## 📖 Indice
 
 - [Cos'è MusicSest](#cosè-musicsest)
+- [Funzionalità](#-funzionalità)
 
 ---
 
