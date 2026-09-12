@@ -17,11 +17,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 /* Stato in memoria                                                    */
 /* ------------------------------------------------------------------ */
 
-const sessions = new Map();
-const socketInfo = new Map();
+const sessions = new Map();//codice_sessione -> oggetto sessione
+const socketInfo = new Map();//socket.id -> { code, role }
 
-const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-function genCode() {
+function genCode() {//Genera un codice sessione di 5 caratteri dal alfabetto CODE_CHARS
+  const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code;
   do {
     code = Array.from({ length: 5 },
