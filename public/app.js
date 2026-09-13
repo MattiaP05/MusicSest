@@ -379,13 +379,6 @@ function renderListener() {
       <h2>🗳️ Vota la prossima canzone</h2>
       ${renderCandidates(s, true)}
     </div>
-
-    <div class="card">
-      <h2>👥 Partecipanti (${s.users.length})</h2>
-      <div class="users">
-        ${s.users.map(u => `<span class="user ${u.isMaster ? 'master' : ''}">${escapeHtml(u.name)}</span>`).join('')}
-      </div>
-    </div>
   `;
 
   el('leaveBtn')?.addEventListener('click', () => location.reload());

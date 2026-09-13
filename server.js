@@ -30,8 +30,6 @@ function genCode() {//Genera un codice sessione di 5 caratteri dal alfabetto COD
   return code;
 }
 
-let trackCounter = 0;
-
 function getSession(socket) {
   const info = socketInfo.get(socket.id);
   if (!info) return null;
@@ -43,7 +41,7 @@ const isMaster = (socket, session) => session && session.masterId === socket.id;
 /* Utility di stato                                                    */
 /* ------------------------------------------------------------------ */
 
-function publicState(session) {
+function publicState(session) {//prende lo stato "grezzo" interno e lo trasforma in un oggetto semplice fatto solo di array/oggetti primitivi, pronto per essere inviato via Socket.IO
   return {
     code: session.code,
     masterId: session.masterId,
@@ -72,7 +70,7 @@ function publicState(session) {
   };
 }
 
-function broadcast(code) {
+function broadcast(code) {//prende lo stato attuale di una sessione, lo trasforma nel formato pubblico/serializzabile, e lo spedisce via WebSocket a tutti i client connessi a quella sessione
   const s = sessions.get(code);
   if (!s) return;
   io.to(code).emit('state', publicState(s));
@@ -201,6 +199,7 @@ io.on('connection', (socket) => {
       return cb?.({ ok: false, error: 'Solo il master può modificare la playlist' });
 
     const list = Array.isArray(tracks) ? tracks : [];
+    let trackCounter = 0;
     session.playlist = list.map(t => ({
       id: 't' + (++trackCounter),
       title: (t.title || 'Senza titolo').toString().slice(0, 120),
