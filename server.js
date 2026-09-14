@@ -91,6 +91,52 @@ function getSession(socket) {
   return sessions.get(info.code) || null;
 }
 
+function getCookieValue(cookieHeader, name) {
+  if (!cookieHeader) return null;
+  const match = cookieHeader.split(';').map(v => v.trim()).find(v => v.startsWith(`${name}=`));
+  return match ? decodeURIComponent(match.slice(name.length + 1)) : null;
+}
+
+function getSpotifyTokenFromSocket(socket) {
+  return getCookieValue(socket.request?.headers?.cookie || '', 'spotify_access_token');
+}
+
+async function pauseSpotifyPlayback(socket) {
+  const token = getSpotifyTokenFromSocket(socket);
+  if (!token) return false;
+
+  try {
+    const response = await fetch('https://api.spotify.com/v1/me/player/pause', {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.status === 204 || response.ok;
+  } catch (err) {
+    console.error('Spotify pause error:', err);
+    return false;
+  }
+}
+
+async function resumeSpotifyPlayback(socket, positionMs = 0) {
+  const token = getSpotifyTokenFromSocket(socket);
+  if (!token) return false;
+
+  try {
+    const response = await fetch('https://api.spotify.com/v1/me/player/play', {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ position_ms: Math.max(0, Math.floor(positionMs)) })
+    });
+    return response.status === 204 || response.ok;
+  } catch (err) {
+    console.error('Spotify resume error:', err);
+    return false;
+  }
+}
+
 app.get('/spotify/login', (req, res) => {
   if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET) {
     return res.status(500).send('Configura SPOTIFY_CLIENT_ID e SPOTIFY_CLIENT_SECRET prima di usare Spotify.');
@@ -324,19 +370,22 @@ io.on('connection', (socket) => {
     session.advance();
   });
 
-  socket.on('master:block', () => {
+  socket.on('master:block', async () => {
     const session = getSession(socket);
     if (!session || !session.isMaster(socket)) return;
 
     session.block();
+    await pauseSpotifyPlayback(socket);
     session.broadcast();
   });
 
-  socket.on('master:resume', () => {
+  socket.on('master:resume', async () => {
     const session = getSession(socket);
     if (!session || !session.isMaster(socket)) return;
 
     session.resume();
+    await resumeSpotifyPlayback(socket, session.pausedElapsed || 0);
+    session.broadcast();
   });
 
   socket.on('vote', ({ trackId } = {}) => {
