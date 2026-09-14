@@ -16,7 +16,7 @@ const SPOTIFY_REDIRECT_URI = process.env.SPOTIFY_REDIRECT_URI || '';
 const SPOTIFY_SCOPES = 'playlist-read-private playlist-read-collaborative streaming user-read-private user-read-email user-modify-playback-state user-read-playback-state';
 
 function resolveSpotifyRedirectUri(req) {
-  const host = req.headers.host || '127.0.0.1:3000';
+  const host = req.headers.host || '';
   return `http://${host}/spotify/callback`;
 }
 
