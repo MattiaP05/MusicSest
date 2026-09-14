@@ -29,9 +29,9 @@ export class Session {
       masterId: this.masterId,
       masterName: this.masterName,
       playlist: this.playlist.map(t => ({
-        id: t.id, title: t.title, artist: t.artist, duration: t.duration
+        id: t.id, title: t.title, artist: t.artist, duration: t.duration, uri: t.uri || null
       })),
-      current: this.current,
+      current: this.current ? { ...this.current, uri: this.current.uri || null } : null,
       isPlaying: this.isPlaying,
       startedAt: this.startedAt,
       pausedElapsed: this.pausedElapsed || 0,
@@ -39,7 +39,7 @@ export class Session {
       candidates: this.candidates.map(id => {
         const t = this.playlist.find(x => x.id === id) || {};
         return {
-          id, title: t.title, artist: t.artist, duration: t.duration,
+          id, title: t.title, artist: t.artist, duration: t.duration, uri: t.uri || null,
           voters: [...(this.votes.get(id) || [])]
         };
       }),
@@ -85,7 +85,8 @@ export class Session {
       id: trackIdFactory(),
       title: (t.title || 'Senza titolo').toString().slice(0, 120),
       artist: (t.artist || '').toString().slice(0, 120),
-      duration: Math.max(5, Math.min(3600, Number(t.duration) || 30))
+      duration: Math.max(5, Math.min(3600, Number(t.duration) || 30)),
+      uri: t.uri || null
     }));
     this.#stopTimer();
     this.current = null;

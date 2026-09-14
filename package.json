@@ -8,6 +8,7 @@
     "dev": "node --watch server.js"
   },
   "dependencies": {
+    "cookie-parser": "^1.4.7",
     "express": "^4.19.2",
     "socket.io": "^4.7.5"
   }

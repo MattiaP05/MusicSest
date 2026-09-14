@@ -11,7 +11,12 @@ const state = {
   playlistText: '',
   showImport: false,
   candidateCount: 5,
-  playlistSearch: ''    // <-- nuovo: filtro playlist
+  playlistSearch: '',
+  spotifyConnected: false,
+  spotifyLoading: false,
+  spotifyError: null,
+  spotifyPlaylists: [],
+  lastSpotifyTrackId: null
 };
 
 /* ---------------- helpers ---------------- */
@@ -24,12 +29,72 @@ function escapeHtml(s) {
 }
 const isMaster = () => state.session && state.session.masterId === socket.id;
 
+async function fetchJson(url, options = {}) {
+  const response = await fetch(url, options);
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data?.error || 'Errore');
+  }
+  return data;
+}
+
+async function loadSpotifyPlaylists() {
+  if (!state.spotifyConnected) return;
+  state.spotifyLoading = true;
+  state.spotifyError = null;
+  render();
+
+  try {
+    const data = await fetchJson('/api/spotify/playlists');
+    state.spotifyPlaylists = data.playlists || [];
+  } catch (err) {
+    state.spotifyError = err.message;
+    state.spotifyPlaylists = [];
+  } finally {
+    state.spotifyLoading = false;
+    render();
+  }
+}
+
+async function maybeStartSpotifyPlayback(s) {
+  if (!state.spotifyConnected || !isMaster()) return;
+  const current = s?.current;
+  if (!current || !current.uri) return;
+  if (state.lastSpotifyTrackId === current.id) return;
+
+  state.lastSpotifyTrackId = current.id;
+  try {
+    const response = await fetch('/api/spotify/play', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uri: current.uri })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data?.error || 'Impossibile avviare la traccia su Spotify');
+  } catch (err) {
+    state.spotifyError = err.message;
+  }
+}
+
+async function initSpotifyStatus() {
+  try {
+    const data = await fetchJson('/api/spotify/me');
+    state.spotifyConnected = !!data?.profile;
+    if (state.spotifyConnected) {
+      await loadSpotifyPlaylists();
+    }
+  } catch {
+    state.spotifyConnected = false;
+  }
+}
+
 /* ---------------- socket ---------------- */
 
 socket.on('state', (s) => {
   state.session = s;
   state.closed = null;
   if (s.candidatesCount) state.candidateCount = s.candidatesCount;
+  maybeStartSpotifyPlayback(s);
   render();
 });
 
@@ -169,6 +234,7 @@ function renderMaster() {
                value="${escapeHtml(state.playlistSearch)}" style="margin-top:12px;" />
         <div id="playlistList" style="margin-top:12px;">${renderPlaylist(s)}</div>
       `}
+      <div style="margin-top:16px;">${renderSpotifySection()}</div>
     </div>
   `;
 
@@ -263,6 +329,35 @@ Levitating - Dua Lipa">${escapeHtml(state.playlistText)}</textarea>
   `;
 }
 
+function renderSpotifySection() {
+  return `
+    <div class="card" style="padding:12px 16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+        <h3 style="margin:0;">Spotify</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button id="spotifyConnectBtn" class="${state.spotifyConnected ? 'ghost' : 'blue'}">
+            ${state.spotifyConnected ? 'Spotify connesso' : 'Connetti Spotify'}
+          </button>
+          ${state.spotifyConnected ? `<button id="spotifyRefreshBtn" class="ghost">Aggiorna playlist</button>` : ''}
+          ${state.spotifyConnected ? `<button id="spotifyLogoutBtn" class="ghost">Disconnetti</button>` : ''}
+        </div>
+      </div>
+      ${state.spotifyError ? `<p class="error" style="margin-top:10px;">${escapeHtml(state.spotifyError)}</p>` : ''}
+      ${state.spotifyLoading ? `<p class="muted small" style="margin-top:10px;">Caricamento playlist Spotify...</p>` : ''}
+      ${state.spotifyPlaylists.length ? `
+        <div style="margin-top:12px;display:grid;gap:8px;">
+          ${state.spotifyPlaylists.map(pl => `
+            <button class="ghost" data-spotify-playlist="${escapeHtml(pl.id)}" style="text-align:left;justify-content:space-between;">
+              <span>${escapeHtml(pl.name)}</span>
+              <span class="muted small">${pl.tracks} brani</span>
+            </button>
+          `).join('')}
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
 // Aggiorna SOLO la lista playlist (evita di perdere il focus dell'input di ricerca)
 function refreshPlaylistList() {
   const container = el('playlistList');
@@ -298,6 +393,48 @@ function attachMasterEvents() {
 
   el('candidateSelect')?.addEventListener('change', (e) => {
     socket.emit('master:setCandidateCount', { count: Number(e.target.value) });
+  });
+
+  el('spotifyConnectBtn')?.addEventListener('click', () => {
+    if (state.spotifyConnected) return;
+    window.location.href = '/spotify/login';
+  });
+
+  el('spotifyRefreshBtn')?.addEventListener('click', () => loadSpotifyPlaylists());
+
+  el('spotifyLogoutBtn')?.addEventListener('click', async () => {
+    await fetch('/api/spotify/logout', { method: 'POST' });
+    state.spotifyConnected = false;
+    state.spotifyPlaylists = [];
+    state.spotifyError = null;
+    state.lastSpotifyTrackId = null;
+    render();
+  });
+
+  document.querySelectorAll('[data-spotify-playlist]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const playlistId = btn.dataset.spotifyPlaylist;
+      if (!playlistId) return;
+      try {
+        const data = await fetchJson(`/api/spotify/playlists/${playlistId}/tracks`);
+        const tracks = (data.tracks || []).map(t => ({
+          title: t.title,
+          artist: t.artist,
+          duration: t.duration,
+          uri: t.uri
+        }));
+        socket.emit('master:setPlaylist', { tracks }, (res) => {
+          if (res?.ok) {
+            state.showImport = false;
+            state.playlistSearch = '';
+            render();
+          }
+        });
+      } catch (err) {
+        state.spotifyError = err.message;
+        render();
+      }
+    });
   });
 
   el('toggleImportBtn')?.addEventListener('click', () => {
@@ -441,3 +578,4 @@ const joinParam = params.get('join');
 if (joinParam) state.joinCode = joinParam.toUpperCase();
 
 render();
+initSpotifyStatus();
