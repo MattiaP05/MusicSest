@@ -4,6 +4,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import 'dotenv/config';
 import cookieParser from 'cookie-parser';
 import { Session } from './session.js';
 
@@ -11,8 +12,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
 const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID || '';
 const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET || '';
-const SPOTIFY_REDIRECT_URI = process.env.SPOTIFY_REDIRECT_URI || 'http://localhost:3000/spotify/callback';
+const SPOTIFY_REDIRECT_URI = process.env.SPOTIFY_REDIRECT_URI || '';
 const SPOTIFY_SCOPES = 'playlist-read-private playlist-read-collaborative streaming user-read-private user-read-email user-modify-playback-state user-read-playback-state';
+
+function resolveSpotifyRedirectUri(req) {
+  const host = req.headers.host || '127.0.0.1:3000';
+  return `http://${host}/spotify/callback`;
+}
 
 const app = express();
 const httpServer = createServer(app);
@@ -28,11 +34,12 @@ const socketInfo = new Map();
 let trackCounter = 0;
 const nextTrackId = () => 't' + (++trackCounter);
 
-function buildSpotifyAuthorizeUrl(state) {
+function buildSpotifyAuthorizeUrl(req, state) {
+  const redirectUri = resolveSpotifyRedirectUri(req);
   const params = new URLSearchParams({
     client_id: SPOTIFY_CLIENT_ID,
     response_type: 'code',
-    redirect_uri: SPOTIFY_REDIRECT_URI,
+    redirect_uri: redirectUri,
     scope: SPOTIFY_SCOPES,
     state,
     show_dialog: 'true'
@@ -90,16 +97,26 @@ app.get('/spotify/login', (req, res) => {
   }
 
   const state = crypto.randomBytes(16).toString('hex');
-  res.cookie('spotify_state', state, { httpOnly: true, sameSite: 'lax' });
-  res.redirect(buildSpotifyAuthorizeUrl(state));
+  const redirectUri = resolveSpotifyRedirectUri(req);
+  res.cookie('spotify_state', state, { httpOnly: true, sameSite: 'lax', path: '/' });
+  console.log('Spotify login redirect URI:', redirectUri);
+  res.redirect(buildSpotifyAuthorizeUrl(req, state));
 });
 
 app.get('/spotify/callback', async (req, res) => {
   const { code, state, error } = req.query;
   const expectedState = req.cookies?.spotify_state;
+  const redirectUri = resolveSpotifyRedirectUri(req);
 
   if (error) return res.status(400).send(`Spotify rejected the request: ${error}`);
   if (!code || !state || state !== expectedState) {
+    console.error('Spotify callback mismatch:', {
+      host: req.headers.host,
+      redirectUri,
+      receivedState: state || null,
+      expectedState: expectedState || null,
+      cookieNames: req.headers.cookie ? Object.keys(Object.fromEntries(new URLSearchParams(req.headers.cookie.split('; ').join('&')))) : []
+    });
     return res.status(400).send('Invalid Spotify callback state.');
   }
 
@@ -351,5 +368,5 @@ io.on('connection', (socket) => {
 });
 
 httpServer.listen(PORT, () => {
-  console.log(`🎧 MusicSest beta in ascolto su http://localhost:${PORT}`);
+  console.log(`🎧 MusicSest beta in ascolto su http://127.0.0.1:${PORT}`);
 });
